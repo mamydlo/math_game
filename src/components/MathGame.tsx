@@ -168,15 +168,23 @@ const MathGame = () => {
             <div className="space-y-2">
               <Label>Operations</Label>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(settings.operations).map(([op, checked]) => (
-                  <div key={op} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => handleOperationToggle(op)}
-                    />
-                    <Label>{op}</Label>
-                  </div>
-                ))}
+                {Object.entries(settings.operations).map(([op, checked]) => {
+                  const labels = {
+                    addition: 'Addition (+)',
+                    subtraction: 'Subtraction (-)',
+                    multiplication: 'Multiplication (×)',
+                    division: 'Division (÷)'
+                  };
+                  return (
+                    <div key={op} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => handleOperationToggle(op)}
+                      />
+                      <Label>{labels[op]}</Label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             
