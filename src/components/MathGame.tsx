@@ -24,6 +24,7 @@ const MathGame = () => {
   const [problems, setProblems] = useState([]);
   const [currentProblem, setCurrentProblem] = useState(0);
   const [startTime, setStartTime] = useState(null);
+  const [problemStartTime, setProblemStartTime] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState([]);
   
@@ -75,7 +76,9 @@ const MathGame = () => {
       .map(() => generateProblem());
     setProblems(newProblems);
     setCurrentProblem(0);
-    setStartTime(Date.now());
+    const now = Date.now();
+    setStartTime(now);
+    setProblemStartTime(now);
     setAnswers(Array(settings.problemCount).fill(''));
     setResults([]);
     setGameState('playing');
@@ -92,14 +95,14 @@ const MathGame = () => {
       problem: problems[currentProblem],
       userAnswer: currentAnswer,
       isCorrect,
-      timeTaken: Date.now() - startTime
+      timeTaken: Date.now() - problemStartTime
     }];
     
     setResults(newResults);
 
     if (currentProblem < problems.length - 1) {
       setCurrentProblem(curr => curr + 1);
-      setStartTime(Date.now());
+      setProblemStartTime(Date.now());
     } else {
       setGameState('finished');
     }
@@ -251,7 +254,7 @@ const MathGame = () => {
               <div className="font-bold mt-4">
                 Score: {results.filter(r => r.isCorrect).length} / {results.length}
                 <br />
-                Total Time: {(results[results.length - 1].timeTaken / 1000).toFixed(1)}s
+                Total Time: {(results.reduce((sum, result) => sum + result.timeTaken, 0) / 1000).toFixed(1)}s
               </div>
             </div>
             
