@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { trackEvent } from '../analytics';
 
 const MathGame = () => {
   // Game settings
@@ -71,6 +72,7 @@ const MathGame = () => {
 
   // Start the game
   const startGame = () => {
+    console.log('Starting game with settings:', settings);
     const newProblems = Array(settings.problemCount)
       .fill(null)
       .map(() => generateProblem());
@@ -82,6 +84,11 @@ const MathGame = () => {
     setAnswers(Array(settings.problemCount).fill(''));
     setResults([]);
     setGameState('playing');
+    
+    // Track game start
+    console.log('About to track game_start event');
+    trackEvent('game_start', 'Game', `${settings.problemCount} problems`, settings.problemCount);
+    console.log('Game start event tracked');
   };
 
   // Handle answer submission
@@ -105,6 +112,18 @@ const MathGame = () => {
       setProblemStartTime(Date.now());
     } else {
       setGameState('finished');
+      
+      // Track game completion
+      console.log('Game finished, tracking completion events');
+      const correctAnswers = newResults.filter(r => r.isCorrect).length;
+      const totalTime = newResults.reduce((sum, result) => sum + result.timeTaken, 0);
+      const score = Math.round((correctAnswers / newResults.length) * 100);
+      
+      console.log('Game completion stats:', { correctAnswers, totalTime, score });
+      trackEvent('game_completed', 'Game', `Score: ${score}%`, score);
+      trackEvent('game_performance', 'Game', `${correctAnswers}/${newResults.length} correct`, correctAnswers);
+      trackEvent('game_time', 'Game', `${Math.round(totalTime / 1000)}s total`, Math.round(totalTime / 1000));
+      console.log('All completion events tracked');
     }
   };
 
@@ -258,7 +277,10 @@ const MathGame = () => {
               </div>
             </div>
             
-            <Button className="w-full" onClick={() => setGameState('setup')}>
+            <Button className="w-full" onClick={() => {
+              setGameState('setup');
+              trackEvent('play_again', 'Game', 'User clicked play again');
+            }}>
               Play Again
             </Button>
           </div>
