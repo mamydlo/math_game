@@ -27,7 +27,7 @@ const loadGAScript = () => {
     window.gtag('config', MEASUREMENT_ID, {
       debug_mode: !isProduction,
       send_page_view: false, // We'll handle page views manually
-      cookie_domain: 'auto',
+      cookie_domain: 'none',
       cookie_flags: isProduction ? 'SameSite=None;Secure' : 'SameSite=Lax',
       // Handle GitHub Pages subdirectory deployment
       custom_map: {
@@ -60,7 +60,7 @@ export const initGA = () => {
     ReactGA.initialize(MEASUREMENT_ID, {
       debug: false,
       gtagOptions: {
-        cookie_domain: 'auto',
+        cookie_domain: 'none',
         cookie_flags: 'SameSite=None;Secure',
         ...(isGitHubPages && {
           cookie_path: '/math_game/'
