@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import MathGame from './components/MathGame'
 import { trackPageView } from './analytics'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 function App() {
   useEffect(() => {
@@ -9,9 +10,11 @@ function App() {
   }, [])
 
   return (
-    <main className="container mx-auto p-4">
-      <MathGame />
-    </main>
+    <LanguageProvider>
+      <main className="container mx-auto p-4">
+        <MathGame />
+      </main>
+    </LanguageProvider>
   )
 }
 

@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { trackEvent } from '../analytics';
+import { useTranslation } from '../contexts/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 
 const MathGame = () => {
+  const { t } = useTranslation();
   // Game settings
   const [settings, setSettings] = useState({
     minNumber: 1,
@@ -229,14 +232,15 @@ const MathGame = () => {
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle>Math Practice Game</CardTitle>
+        <CardTitle>{t('gameTitle')}</CardTitle>
+        {gameState === 'setup' && <LanguageSelector />}
       </CardHeader>
       <CardContent>
         {gameState === 'setup' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Minimum Number</Label>
+                <Label>{t('minNumber')}</Label>
                 <Input
                   type="number"
                   value={settings.minNumber}
@@ -244,7 +248,7 @@ const MathGame = () => {
                 />
               </div>
               <div>
-                <Label>Maximum Number</Label>
+                <Label>{t('maxNumber')}</Label>
                 <Input
                   type="number"
                   value={settings.maxNumber}
@@ -254,7 +258,7 @@ const MathGame = () => {
             </div>
             
             <div>
-              <Label>Max Result</Label>
+              <Label>{t('maxResult')}</Label>
               <Input
                 type="number"
                 value={settings.maxResult}
@@ -267,11 +271,11 @@ const MathGame = () => {
                 checked={settings.allowNegativeResult}
                 onCheckedChange={(checked) => handleSettingsChange('allowNegativeResult', checked)}
               />
-              <Label>Allow negative result</Label>
+              <Label>{t('allowNegativeResult')}</Label>
             </div>
             
             <div>
-              <Label>Number of Problems</Label>
+              <Label>{t('numberOfProblems')}</Label>
               <Input
                 type="number"
                 value={settings.problemCount}
@@ -280,14 +284,14 @@ const MathGame = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Operations</Label>
+              <Label>{t('operations')}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(settings.operations).map(([op, checked]) => {
                   const labels = {
-                    addition: 'Addition (+)',
-                    subtraction: 'Subtraction (-)',
-                    multiplication: 'Multiplication (×)',
-                    division: 'Division (÷)'
+                    addition: t('addition'),
+                    subtraction: t('subtraction'),
+                    multiplication: t('multiplication'),
+                    division: t('division')
                   };
                   return (
                     <div key={op} className="flex items-center space-x-2">
@@ -307,7 +311,7 @@ const MathGame = () => {
               onClick={startGame}
               disabled={!Object.values(settings.operations).some(Boolean)}
             >
-              Start Game
+              {t('startGame')}
             </Button>
           </div>
         )}
@@ -336,24 +340,24 @@ const MathGame = () => {
               onClick={handleSubmit}
               disabled={answers[currentProblem] === ''}
             >
-              Submit Answer (or press Enter)
+              {t('submitAnswer')}
             </Button>
             
             <div className="text-sm text-center">
-              Problem {currentProblem + 1} of {problems.length}
+              {t('problemCounter', { current: currentProblem + 1, total: problems.length })}
             </div>
           </div>
         )}
 
         {gameState === 'finished' && (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold">Results</h3>
+            <h3 className="text-xl font-bold">{t('results')}</h3>
             
             {/* Show "All correct!" message if all problems are correct */}
             {results.every(r => r.isCorrect) && (
               <div className="text-center p-4 bg-green-100 rounded-lg">
-                <div className="text-2xl font-bold text-green-800 mb-2">🎉 All correct! Well done! 🎉</div>
-                <div className="text-green-700">Perfect score!</div>
+                <div className="text-2xl font-bold text-green-800 mb-2">{t('allCorrectTitle')}</div>
+                <div className="text-green-700">{t('allCorrectMessage')}</div>
               </div>
             )}
             
@@ -363,7 +367,7 @@ const MathGame = () => {
                 checked={showCorrectProblems}
                 onCheckedChange={setShowCorrectProblems}
               />
-              <Label>Show correct problems</Label>
+              <Label>{t('showCorrectProblems')}</Label>
             </div>
             
             <div className="space-y-2">
@@ -379,9 +383,9 @@ const MathGame = () => {
                     >
                       {result.problem.num1} {result.problem.operation} {result.problem.num2} = {result.userAnswer}
                       <div className="text-sm">
-                        {result.isCorrect ? 'Correct' : `Incorrect (correct answer: ${result.problem.answer})`}
+                        {result.isCorrect ? t('correct') : t('incorrect', { answer: result.problem.answer })}
                         <br />
-                        Time: {(result.timeTaken / 1000).toFixed(1)}s
+                        {t('time', { time: (result.timeTaken / 1000).toFixed(1) })}
                       </div>
                     </div>
                   );
@@ -389,16 +393,16 @@ const MathGame = () => {
             </div>
             
             <div className="font-bold mt-4">
-              Score: {results.filter(r => r.isCorrect).length} / {results.length}
+              {t('score', { correct: results.filter(r => r.isCorrect).length, total: results.length })}
               <br />
-              Total Time: {(results.reduce((sum, result) => sum + result.timeTaken, 0) / 1000).toFixed(1)}s
+              {t('totalTime', { time: (results.reduce((sum, result) => sum + result.timeTaken, 0) / 1000).toFixed(1) })}
             </div>
             
             <Button className="w-full" onClick={() => {
               setGameState('setup');
               trackEvent('play_again', 'Game', 'User clicked play again');
             }}>
-              Play Again
+              {t('playAgain')}
             </Button>
           </div>
         )}
