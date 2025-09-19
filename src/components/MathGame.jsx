@@ -29,6 +29,7 @@ const MathGame = () => {
   const [problemStartTime, setProblemStartTime] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState([]);
+  const [showCorrectProblems, setShowCorrectProblems] = useState(false);
   
   // Reference for the answer input field
   const answerInputRef = useRef(null);
@@ -296,25 +297,50 @@ const MathGame = () => {
         {gameState === 'finished' && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold">Results</h3>
-            <div className="space-y-2">
-              {results.map((result, index) => (
-                <div 
-                  key={index}
-                  className={`p-2 rounded ${result.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
-                >
-                  {result.problem.num1} {result.problem.operation} {result.problem.num2} = {result.userAnswer}
-                  <div className="text-sm">
-                    {result.isCorrect ? 'Correct' : `Incorrect (correct answer: ${result.problem.answer})`}
-                    <br />
-                    Time: {(result.timeTaken / 1000).toFixed(1)}s
-                  </div>
-                </div>
-              ))}
-              <div className="font-bold mt-4">
-                Score: {results.filter(r => r.isCorrect).length} / {results.length}
-                <br />
-                Total Time: {(results.reduce((sum, result) => sum + result.timeTaken, 0) / 1000).toFixed(1)}s
+            
+            {/* Show "All correct!" message if all problems are correct */}
+            {results.every(r => r.isCorrect) && (
+              <div className="text-center p-4 bg-green-100 rounded-lg">
+                <div className="text-2xl font-bold text-green-800 mb-2">🎉 All correct! Well done! 🎉</div>
+                <div className="text-green-700">Perfect score!</div>
               </div>
+            )}
+            
+            {/* Toggle for showing correct problems */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={showCorrectProblems}
+                onCheckedChange={setShowCorrectProblems}
+              />
+              <Label>Show correct problems</Label>
+            </div>
+            
+            <div className="space-y-2">
+              {results
+                .filter(result => !result.isCorrect || showCorrectProblems)
+                .map((result, index) => {
+                  // Find the original index for the key
+                  const originalIndex = results.findIndex(r => r === result);
+                  return (
+                    <div 
+                      key={originalIndex}
+                      className={`p-2 rounded ${result.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
+                    >
+                      {result.problem.num1} {result.problem.operation} {result.problem.num2} = {result.userAnswer}
+                      <div className="text-sm">
+                        {result.isCorrect ? 'Correct' : `Incorrect (correct answer: ${result.problem.answer})`}
+                        <br />
+                        Time: {(result.timeTaken / 1000).toFixed(1)}s
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+            
+            <div className="font-bold mt-4">
+              Score: {results.filter(r => r.isCorrect).length} / {results.length}
+              <br />
+              Total Time: {(results.reduce((sum, result) => sum + result.timeTaken, 0) / 1000).toFixed(1)}s
             </div>
             
             <Button className="w-full" onClick={() => {
