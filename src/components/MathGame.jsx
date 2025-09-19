@@ -12,6 +12,7 @@ const MathGame = () => {
     minNumber: 1,
     maxNumber: 10,
     maxResult: 100,
+    allowNegativeResult: false,
     operations: {
       addition: true,
       subtraction: true,
@@ -50,55 +51,66 @@ const MathGame = () => {
     if (settings.operations.division) operations.push('/');
 
     const operation = operations[Math.floor(Math.random() * operations.length)];
-    let num1, num2;
+    let num1, num2, result;
+    let attempts = 0;
+    const maxAttempts = 100;
 
-    if (operation === '+') {
-      // For addition: ensure num1 + num2 <= maxResult
-      num1 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
-      const maxNum2 = Math.min(settings.maxNumber, settings.maxResult - num1);
-      const minNum2 = Math.max(settings.minNumber, settings.minNumber);
-      if (maxNum2 >= minNum2) {
-        num2 = Math.floor(Math.random() * (maxNum2 - minNum2 + 1)) + minNum2;
-      } else {
-        // If we can't find a valid num2, try a smaller num1
-        num1 = Math.floor(Math.random() * (Math.min(settings.maxNumber, settings.maxResult - settings.minNumber) - settings.minNumber + 1)) + settings.minNumber;
-        num2 = Math.floor(Math.random() * (Math.min(settings.maxNumber, settings.maxResult - num1) - settings.minNumber + 1)) + settings.minNumber;
-      }
-    } else if (operation === '*') {
-      // For multiplication: ensure num1 * num2 <= maxResult
-      num1 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
-      const maxNum2 = Math.min(settings.maxNumber, Math.floor(settings.maxResult / num1));
-      const minNum2 = Math.max(settings.minNumber, settings.minNumber);
-      if (maxNum2 >= minNum2) {
-        num2 = Math.floor(Math.random() * (maxNum2 - minNum2 + 1)) + minNum2;
-      } else {
-        // If we can't find a valid num2, try a smaller num1
-        const maxNum1 = Math.min(settings.maxNumber, Math.floor(settings.maxResult / settings.minNumber));
-        num1 = Math.floor(Math.random() * (maxNum1 - settings.minNumber + 1)) + settings.minNumber;
-        num2 = Math.floor(Math.random() * (Math.min(settings.maxNumber, Math.floor(settings.maxResult / num1)) - settings.minNumber + 1)) + settings.minNumber;
-      }
-    } else {
-      // For subtraction and division, use original logic (they naturally limit results)
+    do {
       num1 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
       num2 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
-    }
+      
+      if (operation === '+') {
+        result = num1 + num2;
+      } else if (operation === '-') {
+        result = num1 - num2;
+      } else if (operation === '*') {
+        result = num1 * num2;
+      } else if (operation === '/') {
+        // Ensure division problems result in whole numbers
+        num2 = Math.max(1, num2);
+        num1 = num2 * (Math.floor(Math.random() * Math.min(settings.maxNumber, Math.floor(settings.maxResult / num2))) + 1);
+        result = num1 / num2;
+      }
+      
+      attempts++;
+    } while (
+      attempts < maxAttempts && 
+      (Math.abs(result) > settings.maxResult || 
+       (!settings.allowNegativeResult && result < 0))
+    );
 
-    // Ensure division problems result in whole numbers
-    if (operation === '/') {
-      num2 = Math.max(1, num2);
-      num1 = num2 * (Math.floor(Math.random() * settings.maxNumber) + 1);
-    }
-
-    // Ensure subtraction doesn't result in negative numbers
-    if (operation === '-' && num2 > num1) {
-      [num1, num2] = [num2, num1];
+    // If we couldn't generate a valid problem after many attempts, fall back to a simple one
+    if (attempts >= maxAttempts) {
+      if (operation === '+') {
+        num1 = settings.minNumber;
+        num2 = settings.minNumber;
+        result = num1 + num2;
+      } else if (operation === '-') {
+        if (settings.allowNegativeResult) {
+          num1 = settings.minNumber;
+          num2 = settings.maxNumber;
+          result = num1 - num2;
+        } else {
+          num1 = settings.maxNumber;
+          num2 = settings.minNumber;
+          result = num1 - num2;
+        }
+      } else if (operation === '*') {
+        num1 = settings.minNumber;
+        num2 = settings.minNumber;
+        result = num1 * num2;
+      } else if (operation === '/') {
+        num2 = settings.minNumber;
+        num1 = num2;
+        result = num1 / num2;
+      }
     }
 
     return {
       num1,
       num2,
       operation,
-      answer: eval(`${num1} ${operation} ${num2}`),
+      answer: result,
     };
   };
 
@@ -217,6 +229,14 @@ const MathGame = () => {
                 value={settings.maxResult}
                 onChange={(e) => handleSettingsChange('maxResult', parseInt(e.target.value))}
               />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={settings.allowNegativeResult}
+                onCheckedChange={(checked) => handleSettingsChange('allowNegativeResult', checked)}
+              />
+              <Label>Allow negative result</Label>
             </div>
             
             <div>
