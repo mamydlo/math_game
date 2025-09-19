@@ -66,10 +66,41 @@ const MathGame = () => {
       } else if (operation === '*') {
         result = num1 * num2;
       } else if (operation === '/') {
-        // Ensure division problems result in whole numbers
-        num2 = Math.max(1, num2);
-        num1 = num2 * (Math.floor(Math.random() * Math.min(settings.maxNumber, Math.floor(settings.maxResult / num2))) + 1);
-        result = num1 / num2;
+        // Ensure division problems result in whole numbers and both numbers are in range
+        num2 = Math.max(1, Math.min(num2, settings.maxNumber));
+        
+        // Calculate the maximum multiplier to keep num1 within bounds
+        const maxMultiplier = Math.min(
+          Math.floor(settings.maxNumber / num2),
+          Math.floor(settings.maxResult / num2)
+        );
+        
+        if (maxMultiplier >= 1) {
+          const multiplier = Math.floor(Math.random() * maxMultiplier) + 1;
+          num1 = num2 * multiplier;
+          result = multiplier; // This will be the answer
+        } else {
+          // If we can't generate a valid problem with current num2, reduce it gradually
+          while (num2 > settings.minNumber && maxMultiplier < 1) {
+            num2--;
+            const newMaxMultiplier = Math.min(
+              Math.floor(settings.maxNumber / num2),
+              Math.floor(settings.maxResult / num2)
+            );
+            if (newMaxMultiplier >= 1) {
+              const multiplier = Math.floor(Math.random() * newMaxMultiplier) + 1;
+              num1 = num2 * multiplier;
+              result = multiplier;
+              break;
+            }
+          }
+          // Final fallback if we still can't generate a valid problem
+          if (num2 <= settings.minNumber) {
+            num2 = settings.minNumber;
+            num1 = num2;
+            result = 1;
+          }
+        }
       }
       
       attempts++;
@@ -102,7 +133,7 @@ const MathGame = () => {
       } else if (operation === '/') {
         num2 = settings.minNumber;
         num1 = num2;
-        result = num1 / num2;
+        result = 1;
       }
     }
 
