@@ -24,5 +24,8 @@
   "score": "Skóre: {{correct}} / {{total}}",
   "totalTime": "Celkový čas: {{time}}s",
   "playAgain": "Hrať znovu",
-  "selectLanguage": "Vybrať jazyk"
+  "selectLanguage": "Vybrať jazyk",
+  "maxResultWarning": "Maximálny výsledok musí byť aspoň 1. Prosím, zadajte platné číslo.",
+  "minMaxNumberWarning": "Najmenšie číslo musí byť menšie alebo rovné najväčšiemu číslu.",
+  "problemCountWarning": "Počet príkladov musí byť aspoň 1."
 }

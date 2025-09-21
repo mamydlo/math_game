@@ -24,5 +24,8 @@
   "score": "Punkte: {{correct}} / {{total}}",
   "totalTime": "Gesamtzeit: {{time}}s",
   "playAgain": "Nochmal spielen",
-  "selectLanguage": "Sprache auswählen"
+  "selectLanguage": "Sprache auswählen",
+  "maxResultWarning": "Das maximale Ergebnis muss mindestens 1 sein. Bitte geben Sie eine gültige Zahl ein.",
+  "minMaxNumberWarning": "Die kleinste Zahl muss kleiner oder gleich der größten Zahl sein.",
+  "problemCountWarning": "Die Anzahl der Aufgaben muss mindestens 1 sein."
 }

@@ -37,8 +37,49 @@ const MathGame = () => {
   const [results, setResults] = useState([]);
   const [showCorrectProblems, setShowCorrectProblems] = useState(false);
   
+  // Validation state
+  const [maxResultError, setMaxResultError] = useState(false);
+  const [minMaxNumberError, setMinMaxNumberError] = useState(false);
+  const [problemCountError, setProblemCountError] = useState(false);
+  
   // Reference for the answer input field
   const answerInputRef = useRef(null);
+
+  // Helper function to safely convert settings to numbers
+  const getNumericSetting = (value, defaultValue = 0) => {
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    const parsed = parseInt(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  };
+
+  // Validation function to check all settings
+  const validateSettings = (settingsToValidate = settings) => {
+    // Max result validation
+    const maxResultValue = typeof settingsToValidate.maxResult === 'string' ? parseInt(settingsToValidate.maxResult) : settingsToValidate.maxResult;
+    const maxResultInvalid = settingsToValidate.maxResult === '' || settingsToValidate.maxResult === '-' || isNaN(maxResultValue) || maxResultValue < 1;
+    
+    // Min/Max number validation
+    const minNum = getNumericSetting(settingsToValidate.minNumber, 1);
+    const maxNum = getNumericSetting(settingsToValidate.maxNumber, 10);
+    const minMaxInvalid = (settingsToValidate.minNumber !== '' && settingsToValidate.minNumber !== '-' && 
+                          settingsToValidate.maxNumber !== '' && settingsToValidate.maxNumber !== '-' && 
+                          !isNaN(minNum) && !isNaN(maxNum) && minNum > maxNum);
+    
+    // Problem count validation
+    const problemCountValue = getNumericSetting(settingsToValidate.problemCount, 5);
+    const problemCountInvalid = settingsToValidate.problemCount === '' || settingsToValidate.problemCount === '-' || isNaN(problemCountValue) || problemCountValue < 1;
+    
+    setMaxResultError(maxResultInvalid);
+    setMinMaxNumberError(minMaxInvalid);
+    setProblemCountError(problemCountInvalid);
+    
+    return {
+      maxResultInvalid,
+      minMaxInvalid,
+      problemCountInvalid,
+      hasAnyError: maxResultInvalid || minMaxInvalid || problemCountInvalid
+    };
+  };
 
   // Focus the input field when a new problem is loaded
   useEffect(() => {
@@ -46,6 +87,11 @@ const MathGame = () => {
       answerInputRef.current.focus();
     }
   }, [currentProblem, gameState]);
+
+  // Initial validation of all settings
+  useEffect(() => {
+    validateSettings();
+  }, [settings]);
 
   // Evaluate expression following order of operations (PEMDAS/BODMAS)
   const evaluateExpression = (operands, operations) => {
@@ -109,8 +155,10 @@ const MathGame = () => {
 
       // Generate operands within the specified range
       operands = [];
+      const minNum = getNumericSetting(settings.minNumber, 1);
+      const maxNum = getNumericSetting(settings.maxNumber, 10);
       for (let i = 0; i < settings.operandCount; i++) {
-        operands.push(Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber);
+        operands.push(Math.floor(Math.random() * (maxNum - minNum + 1)) + minNum);
       }
 
       // Special handling for divisions to ensure whole number results
@@ -127,8 +175,8 @@ const MathGame = () => {
             // Adjust the dividend to be divisible by the divisor
             operands[i] = operands[i] - remainder;
             // Ensure it's not below minimum
-            if (operands[i] < settings.minNumber) {
-              operands[i] = operands[i + 1] * Math.ceil(settings.minNumber / operands[i + 1]);
+            if (operands[i] < minNum) {
+              operands[i] = operands[i + 1] * Math.ceil(minNum / operands[i + 1]);
             }
           }
         }
@@ -138,11 +186,12 @@ const MathGame = () => {
       result = evaluateExpression(operands, operations);
 
       // Validation checks
+      const maxRes = getNumericSetting(settings.maxResult, 100);
       const isValid = 
         Number.isInteger(result) &&
-        Math.abs(result) <= settings.maxResult &&
+        Math.abs(result) <= maxRes &&
         (settings.allowNegativeResult || result >= 0) &&
-        operands.every(op => op >= settings.minNumber && op <= settings.maxNumber);
+        operands.every(op => op >= minNum && op <= maxNum);
 
       if (isValid) {
         break;
@@ -153,13 +202,14 @@ const MathGame = () => {
 
     // If we couldn't generate a valid problem after many attempts, fall back to a simple one
     if (attempts >= maxAttempts) {
-      operands = [settings.minNumber, settings.minNumber];
+      const fallbackNum = getNumericSetting(settings.minNumber, 1);
+      operands = [fallbackNum, fallbackNum];
       operations = ['+'];
       for (let i = 2; i < settings.operandCount; i++) {
-        operands.push(settings.minNumber);
+        operands.push(fallbackNum);
         operations.push('+');
       }
-      result = settings.minNumber * settings.operandCount;
+      result = fallbackNum * settings.operandCount;
     }
 
     return {
@@ -262,10 +312,15 @@ const MathGame = () => {
   };
 
   const handleSettingsChange = (field, value) => {
-    setSettings(prev => ({
-      ...prev,
+    const newSettings = {
+      ...settings,
       [field]: value
-    }));
+    };
+    
+    setSettings(newSettings);
+    
+    // Validate all settings with the new value
+    validateSettings(newSettings);
   };
 
   const handleOperationToggle = (operation) => {
@@ -300,7 +355,17 @@ const MathGame = () => {
                 <Input
                   type="number"
                   value={settings.minNumber}
-                  onChange={(e) => handleSettingsChange('minNumber', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === '' || inputValue === '-') {
+                      handleSettingsChange('minNumber', inputValue);
+                    } else {
+                      const numValue = parseInt(inputValue);
+                      if (!isNaN(numValue)) {
+                        handleSettingsChange('minNumber', numValue);
+                      }
+                    }
+                  }}
                 />
               </div>
               <div>
@@ -308,7 +373,17 @@ const MathGame = () => {
                 <Input
                   type="number"
                   value={settings.maxNumber}
-                  onChange={(e) => handleSettingsChange('maxNumber', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === '' || inputValue === '-') {
+                      handleSettingsChange('maxNumber', inputValue);
+                    } else {
+                      const numValue = parseInt(inputValue);
+                      if (!isNaN(numValue)) {
+                        handleSettingsChange('maxNumber', numValue);
+                      }
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -318,7 +393,17 @@ const MathGame = () => {
               <Input
                 type="number"
                 value={settings.maxResult}
-                onChange={(e) => handleSettingsChange('maxResult', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  if (inputValue === '' || inputValue === '-') {
+                    handleSettingsChange('maxResult', inputValue);
+                  } else {
+                    const numValue = parseInt(inputValue);
+                    if (!isNaN(numValue)) {
+                      handleSettingsChange('maxResult', numValue);
+                    }
+                  }
+                }}
               />
             </div>
             
@@ -348,7 +433,17 @@ const MathGame = () => {
               <Input
                 type="number"
                 value={settings.problemCount}
-                onChange={(e) => handleSettingsChange('problemCount', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  if (inputValue === '' || inputValue === '-') {
+                    handleSettingsChange('problemCount', inputValue);
+                  } else {
+                    const numValue = parseInt(inputValue);
+                    if (!isNaN(numValue)) {
+                      handleSettingsChange('problemCount', numValue);
+                    }
+                  }
+                }}
               />
             </div>
             
@@ -375,10 +470,28 @@ const MathGame = () => {
               </div>
             </div>
             
+            {maxResultError && (
+              <div className="text-red-600 text-sm p-2 bg-red-50 rounded border border-red-200">
+                {t('maxResultWarning')}
+              </div>
+            )}
+            
+            {minMaxNumberError && (
+              <div className="text-red-600 text-sm p-2 bg-red-50 rounded border border-red-200">
+                {t('minMaxNumberWarning')}
+              </div>
+            )}
+            
+            {problemCountError && (
+              <div className="text-red-600 text-sm p-2 bg-red-50 rounded border border-red-200">
+                {t('problemCountWarning')}
+              </div>
+            )}
+            
             <Button 
               className="w-full"
               onClick={startGame}
-              disabled={!Object.values(settings.operations).some(Boolean)}
+              disabled={!Object.values(settings.operations).some(Boolean) || maxResultError || minMaxNumberError || problemCountError}
             >
               {t('startGame')}
             </Button>
