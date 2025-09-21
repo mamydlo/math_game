@@ -4,6 +4,7 @@
   "maxNumber": "Größte Zahl",
   "maxResult": "Maximales Ergebnis",
   "allowNegativeResult": "Negative Ergebnisse erlauben",
+  "numberOfOperands": "Anzahl der Operanden",
   "numberOfProblems": "Anzahl der Aufgaben",
   "operations": "Rechenarten",
   "addition": "Addition (+)",

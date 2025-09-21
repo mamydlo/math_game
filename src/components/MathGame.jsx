@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Select, SelectItem } from '@/components/ui/select';
 import { trackEvent } from '../analytics';
 import { useTranslation } from '../contexts/LanguageContext';
 import LanguageSelector from './LanguageSelector';
@@ -16,6 +17,7 @@ const MathGame = () => {
     maxNumber: 10,
     maxResult: 100,
     allowNegativeResult: false,
+    operandCount: 2,
     operations: {
       addition: true,
       subtraction: true,
@@ -45,112 +47,166 @@ const MathGame = () => {
     }
   }, [currentProblem, gameState]);
 
+  // Evaluate expression following order of operations (PEMDAS/BODMAS)
+  const evaluateExpression = (operands, operations) => {
+    // Create a copy of operands and operations to avoid modifying the original
+    let nums = [...operands];
+    let ops = [...operations];
+    
+    // First pass: Handle multiplication and division (left to right)
+    for (let i = 0; i < ops.length; i++) {
+      if (ops[i] === '*' || ops[i] === '/') {
+        let result;
+        if (ops[i] === '*') {
+          result = nums[i] * nums[i + 1];
+        } else { // division
+          result = nums[i] / nums[i + 1];
+        }
+        
+        // Replace the two operands and operator with the result
+        nums.splice(i, 2, result);
+        ops.splice(i, 1);
+        i--; // Adjust index since we removed elements
+      }
+    }
+    
+    // Second pass: Handle addition and subtraction (left to right)
+    for (let i = 0; i < ops.length; i++) {
+      let result;
+      if (ops[i] === '+') {
+        result = nums[i] + nums[i + 1];
+      } else { // subtraction
+        result = nums[i] - nums[i + 1];
+      }
+      
+      // Replace the two operands and operator with the result
+      nums.splice(i, 2, result);
+      ops.splice(i, 1);
+      i--; // Adjust index since we removed elements
+    }
+    
+    return nums[0];
+  };
+
   // Generate a random problem based on settings
   const generateProblem = () => {
-    const operations = [];
-    if (settings.operations.addition) operations.push('+');
-    if (settings.operations.subtraction) operations.push('-');
-    if (settings.operations.multiplication) operations.push('*');
-    if (settings.operations.division) operations.push('/');
+    const availableOperations = [];
+    if (settings.operations.addition) availableOperations.push('+');
+    if (settings.operations.subtraction) availableOperations.push('-');
+    if (settings.operations.multiplication) availableOperations.push('*');
+    if (settings.operations.division) availableOperations.push('/');
 
-    const operation = operations[Math.floor(Math.random() * operations.length)];
-    let num1, num2, result;
     let attempts = 0;
-    const maxAttempts = 100;
+    const maxAttempts = 1000;
+    let operands, operations, result;
 
     do {
-      num1 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
-      num2 = Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber;
-      
-      if (operation === '+') {
-        result = num1 + num2;
-      } else if (operation === '-') {
-        result = num1 - num2;
-      } else if (operation === '*') {
-        result = num1 * num2;
-      } else if (operation === '/') {
-        // Ensure division problems result in whole numbers and both numbers are in range
-        num2 = Math.max(1, Math.min(num2, settings.maxNumber));
-        
-        // Calculate the maximum multiplier to keep num1 within bounds
-        const maxMultiplier = Math.min(
-          Math.floor(settings.maxNumber / num2),
-          Math.floor(settings.maxResult / num2)
-        );
-        
-        if (maxMultiplier >= 1) {
-          const multiplier = Math.floor(Math.random() * maxMultiplier) + 1;
-          num1 = num2 * multiplier;
-          result = multiplier; // This will be the answer
-        } else {
-          // If we can't generate a valid problem with current num2, reduce it gradually
-          while (num2 > settings.minNumber && maxMultiplier < 1) {
-            num2--;
-            const newMaxMultiplier = Math.min(
-              Math.floor(settings.maxNumber / num2),
-              Math.floor(settings.maxResult / num2)
-            );
-            if (newMaxMultiplier >= 1) {
-              const multiplier = Math.floor(Math.random() * newMaxMultiplier) + 1;
-              num1 = num2 * multiplier;
-              result = multiplier;
-              break;
-            }
+      // Generate operations first (one less than operand count)
+      operations = [];
+      for (let i = 0; i < settings.operandCount - 1; i++) {
+        operations.push(availableOperations[Math.floor(Math.random() * availableOperations.length)]);
+      }
+
+      // Generate operands within the specified range
+      operands = [];
+      for (let i = 0; i < settings.operandCount; i++) {
+        operands.push(Math.floor(Math.random() * (settings.maxNumber - settings.minNumber + 1)) + settings.minNumber);
+      }
+
+      // Special handling for divisions to ensure whole number results
+      for (let i = 0; i < operations.length; i++) {
+        if (operations[i] === '/') {
+          // Avoid division by zero
+          if (operands[i + 1] === 0) {
+            operands[i + 1] = 1;
           }
-          // Final fallback if we still can't generate a valid problem
-          if (num2 <= settings.minNumber) {
-            num2 = settings.minNumber;
-            num1 = num2;
-            result = 1;
+          
+          // Make sure the dividend is divisible by the divisor
+          const remainder = operands[i] % operands[i + 1];
+          if (remainder !== 0) {
+            // Adjust the dividend to be divisible by the divisor
+            operands[i] = operands[i] - remainder;
+            // Ensure it's not below minimum
+            if (operands[i] < settings.minNumber) {
+              operands[i] = operands[i + 1] * Math.ceil(settings.minNumber / operands[i + 1]);
+            }
           }
         }
       }
-      
+
+      // Calculate the result using proper order of operations
+      result = evaluateExpression(operands, operations);
+
+      // Validation checks
+      const isValid = 
+        Number.isInteger(result) &&
+        Math.abs(result) <= settings.maxResult &&
+        (settings.allowNegativeResult || result >= 0) &&
+        operands.every(op => op >= settings.minNumber && op <= settings.maxNumber);
+
+      if (isValid) {
+        break;
+      }
+
       attempts++;
-    } while (
-      attempts < maxAttempts && 
-      (Math.abs(result) > settings.maxResult || 
-       (!settings.allowNegativeResult && result < 0))
-    );
+    } while (attempts < maxAttempts);
 
     // If we couldn't generate a valid problem after many attempts, fall back to a simple one
     if (attempts >= maxAttempts) {
-      if (operation === '+') {
-        num1 = settings.minNumber;
-        num2 = settings.minNumber;
-        result = num1 + num2;
-      } else if (operation === '-') {
-        if (settings.allowNegativeResult) {
-          num1 = settings.minNumber;
-          num2 = settings.maxNumber;
-          result = num1 - num2;
-        } else {
-          num1 = settings.maxNumber;
-          num2 = settings.minNumber;
-          result = num1 - num2;
-        }
-      } else if (operation === '*') {
-        num1 = settings.minNumber;
-        num2 = settings.minNumber;
-        result = num1 * num2;
-      } else if (operation === '/') {
-        num2 = settings.minNumber;
-        num1 = num2;
-        result = 1;
+      operands = [settings.minNumber, settings.minNumber];
+      operations = ['+'];
+      for (let i = 2; i < settings.operandCount; i++) {
+        operands.push(settings.minNumber);
+        operations.push('+');
       }
+      result = settings.minNumber * settings.operandCount;
     }
 
     return {
-      num1,
-      num2,
-      operation,
+      operands,
+      operations,
       answer: result,
     };
+  };
+
+  // Test function to verify mathematical correctness (for debugging)
+  const testMathematicalCorrectness = () => {
+    console.log('=== Testing Mathematical Correctness ===');
+    for (let i = 0; i < 10; i++) {
+      const problem = generateProblem();
+      const { operands, operations, answer } = problem;
+      
+      // Create expression string for verification
+      let expression = operands[0].toString();
+      for (let j = 0; j < operations.length; j++) {
+        expression += ` ${operations[j]} ${operands[j + 1]}`;
+      }
+      
+      // Calculate using our function
+      const calculatedAnswer = evaluateExpression(operands, operations);
+      
+      // Verify with JavaScript eval (for comparison only)
+      let evalExpression = expression.replace(/×/g, '*').replace(/÷/g, '/');
+      const evalAnswer = eval(evalExpression);
+      
+      console.log(`Problem ${i + 1}: ${expression}`);
+      console.log(`  Our answer: ${answer}`);
+      console.log(`  Calculated: ${calculatedAnswer}`);
+      console.log(`  JS eval: ${evalAnswer}`);
+      console.log(`  Match: ${answer === calculatedAnswer && calculatedAnswer === evalAnswer ? '✅' : '❌'}`);
+      console.log('---');
+    }
   };
 
   // Start the game
   const startGame = () => {
     console.log('Starting game with settings:', settings);
+    
+    // Test mathematical correctness in development
+    if (process.env.NODE_ENV === 'development') {
+      testMathematicalCorrectness();
+    }
+    
     const newProblems = Array(settings.problemCount)
       .fill(null)
       .map(() => generateProblem());
@@ -266,6 +322,19 @@ const MathGame = () => {
               />
             </div>
             
+            <div>
+              <Label>{t('numberOfOperands')}</Label>
+              <Select 
+                value={settings.operandCount.toString()} 
+                onChange={(e) => handleSettingsChange('operandCount', parseInt(e.target.value))}
+              >
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+                <SelectItem value="5">5</SelectItem>
+              </Select>
+            </div>
+            
             <div className="flex items-center space-x-2">
               <Checkbox
                 checked={settings.allowNegativeResult}
@@ -319,7 +388,14 @@ const MathGame = () => {
         {gameState === 'playing' && problems[currentProblem] && (
           <div className="space-y-4">
             <div className="text-2xl text-center">
-              {problems[currentProblem].num1} {problems[currentProblem].operation} {problems[currentProblem].num2} = ?
+              {problems[currentProblem].operands?.map((operand, index) => (
+                <span key={index}>
+                  {operand}
+                  {index < problems[currentProblem].operations.length && (
+                    <span> {problems[currentProblem].operations[index]} </span>
+                  )}
+                </span>
+              ))} = ?
             </div>
             
             <Input
@@ -381,7 +457,14 @@ const MathGame = () => {
                       key={originalIndex}
                       className={`p-2 rounded ${result.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
                     >
-                      {result.problem.num1} {result.problem.operation} {result.problem.num2} = {result.userAnswer}
+                      {result.problem.operands?.map((operand, index) => (
+                        <span key={index}>
+                          {operand}
+                          {index < result.problem.operations.length && (
+                            <span> {result.problem.operations[index]} </span>
+                          )}
+                        </span>
+                      ))} = {result.userAnswer}
                       <div className="text-sm">
                         {result.isCorrect ? t('correct') : t('incorrect', { answer: result.problem.answer })}
                         <br />

@@ -4,6 +4,7 @@
   "maxNumber": "Maximum Number",
   "maxResult": "Max Result",
   "allowNegativeResult": "Allow negative result",
+  "numberOfOperands": "Number of Operands",
   "numberOfProblems": "Number of Problems",
   "operations": "Operations",
   "addition": "Addition (+)",

@@ -4,6 +4,7 @@
   "maxNumber": "Najväčšie číslo",
   "maxResult": "Maximálny výsledok",
   "allowNegativeResult": "Povoliť záporné výsledky",
+  "numberOfOperands": "Počet operandov",
   "numberOfProblems": "Počet príkladov",
   "operations": "Operácie",
   "addition": "Sčítanie (+)",
