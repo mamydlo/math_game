@@ -340,10 +340,38 @@ const MathGame = () => {
     }
   };
 
+  // Handle finish early
+  const handleFinishEarly = () => {
+    // If no problems have been answered yet, return to setup
+    if (results.length === 0) {
+      setGameState('setup');
+      trackEvent('finish_early_no_answers', 'Game', 'Returned to setup without answering');
+      return;
+    }
+    
+    // Otherwise, go to results with only the answered problems
+    setGameState('finished');
+    
+    // Track early finish
+    trackEvent('finish_early', 'Game', `Finished after ${results.length} problems`, results.length);
+  };
+
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle>{t('gameTitle')}</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>{t('gameTitle')}</CardTitle>
+          {gameState === 'playing' && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleFinishEarly}
+              className="bg-black hover:bg-gray-800 text-white"
+            >
+              {t('finishEarly')}
+            </Button>
+          )}
+        </div>
         {gameState === 'setup' && <LanguageSelector />}
       </CardHeader>
       <CardContent>

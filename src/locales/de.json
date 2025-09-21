@@ -24,6 +24,7 @@
   "score": "Punkte: {{correct}} / {{total}}",
   "totalTime": "Gesamtzeit: {{time}}s",
   "playAgain": "Nochmal spielen",
+  "finishEarly": "Vorzeitig beenden",
   "selectLanguage": "Sprache auswählen",
   "maxResultWarning": "Das maximale Ergebnis muss mindestens 1 sein. Bitte geben Sie eine gültige Zahl ein.",
   "minMaxNumberWarning": "Die kleinste Zahl muss kleiner oder gleich der größten Zahl sein.",

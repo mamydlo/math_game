@@ -24,6 +24,7 @@
   "score": "Score: {{correct}} / {{total}}",
   "totalTime": "Total Time: {{time}}s",
   "playAgain": "Play Again",
+  "finishEarly": "Finish early",
   "selectLanguage": "Select Language",
   "maxResultWarning": "Max result must be at least 1. Please enter a valid number.",
   "minMaxNumberWarning": "Minimum number must be less than or equal to maximum number.",
